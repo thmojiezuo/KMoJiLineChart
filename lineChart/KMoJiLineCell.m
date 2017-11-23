@@ -25,7 +25,7 @@
 }
 - (void)configUI:(NSIndexPath *)indexPath
 {
-    
+    self.selectionStyle = UITableViewCellSelectionStyleNone;
     self.backgroundColor = [UIColor clearColor];
     
     if (chartView) {

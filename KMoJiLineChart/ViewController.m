@@ -20,6 +20,8 @@
 {
     NSInteger _flagIndex; //折线图方块
     CGFloat _flagrr;
+    
+    CGFloat _scrollWidth;
 }
 @property (nonatomic ,strong)UIScrollView *scroller;
 @property (strong, nonatomic)  UITableView *chartTableView;  //折线图
@@ -37,6 +39,7 @@
     self.view.backgroundColor = [UIColor blackColor];
     _flagIndex = 0;
     _flagrr = 0.0;
+    _scrollWidth = SCREEN_WIDTH-50;
     
     _TyearArr = [[NSMutableArray alloc] init];
     _TLevelArr = [[NSMutableArray alloc] init];
@@ -71,8 +74,13 @@
         [_NewCusArr addObject:[NSString stringWithFormat:@"%d",i]];
     }
     
+    if (_TyearArr.count*25 < SCREEN_WIDTH-50 && _TyearArr.count > 1) {
+        _scrollWidth = (_TyearArr.count-1)*25;
+    }else{
+        _scrollWidth = SCREEN_WIDTH-50;
+    }
     
-    _scroller= [[UIScrollView alloc]initWithFrame:CGRectMake(50, 140,  SCREEN_WIDTH-50 , 230)];
+    _scroller= [[UIScrollView alloc]initWithFrame:CGRectMake(50, 140,  _scrollWidth , 230)];
     _scroller.contentSize = CGSizeMake( 22*25+20, 0);
     
     _scroller.showsHorizontalScrollIndicator = YES;
@@ -158,7 +166,7 @@
 #pragma mark -上面的折线图滚动
 
 - (NSInteger)getScrollBarX:(NSInteger)scrollOffset{
-    NSInteger x = (_TyearArr.count - 1) * 25.0 * scrollOffset / (_TyearArr.count * 25.0 - SCREEN_WIDTH +50.0);
+    NSInteger x = (_TyearArr.count - 1) * 25.0 * scrollOffset / (_TyearArr.count * 25.0 - _scrollWidth);
     
     return x;
 }
@@ -177,12 +185,21 @@
     
 }
 
+- (CGFloat) getNearbyValue:(CGFloat)scrollOffset{
+    
+    NSInteger index = [self calculateItemIndex:scrollOffset];
+    
+    CGFloat total = _TyearArr.count * 25.0 - _scrollWidth;
+    CGFloat average = total / (_TyearArr.count-1);
+    return average * index;
+}
+
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView{
     CGFloat aa = scrollView.contentOffset.x;
     if (aa < 0.0  ) {
         aa = 0;
-    }else if (aa > (_TyearArr.count * 25.0 - SCREEN_WIDTH +50.0)){
-        aa = _TyearArr.count * 25.0 - SCREEN_WIDTH +50.0;
+    }else if (aa > (_TyearArr.count * 25.0 - _scrollWidth)){
+        aa = _TyearArr.count * 25.0 - _scrollWidth;
     }
     NSInteger kk = [self calculateItemIndex:aa];
     if (scrollView == _scroller) {
@@ -209,6 +226,43 @@
     }
     
 }
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
+    
+    CGFloat aa = scrollView.contentOffset.x;
+    if (aa < 0.0  ) {
+        aa = 0;
+    }else if (aa > (_TyearArr.count * 25.0 - _scrollWidth)){
+        aa = _TyearArr.count * 25.0 - _scrollWidth;
+    }else{
+        aa = [self getNearbyValue:aa];
+        
+    }
+    NSInteger kk = [self calculateItemIndex:aa];
+    if (scrollView == _scroller) {
+        NSString * str = _TyearArr[kk];
+        NSArray *arr = [str componentsSeparatedByString:@"."];
+        _TyearLab.text = [NSString stringWithFormat:@"%@-%@",arr[0],arr[1]];
+        
+        // 以下开始动画效果
+        
+        CGFloat xx = [self getScrollBarX:aa];
+        NSInteger mm = kk;
+        
+        _flagIndex = mm;
+        _flagrr = xx;
+        NSIndexPath *indexPath=[NSIndexPath indexPathForRow:1 inSection:0];
+        KMoJiLineCell2 *cell2 = [_chartTableView cellForRowAtIndexPath:indexPath];
+        cell2.mm = mm;
+        cell2.rr = _flagrr;
+        
+        NSIndexPath *indexPath1=[NSIndexPath indexPathForRow:0 inSection:0];
+        KMoJiLineCell *cell = [_chartTableView cellForRowAtIndexPath:indexPath1];
+        cell.kk = aa;
+        
+    }
+}
+
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
